@@ -13,18 +13,16 @@
    limitations under the License.
 
 ===========
-Public Data
+公开数据
 ===========
 
-2D Cartographer Backpack – Deutsches Museum
+2D Cartographer 背包 – 德意志博物馆
 ===========================================
 
-This data was collected using a 2D LIDAR backpack at the
-`Deutsches Museum <https://en.wikipedia.org/wiki/Deutsches_Museum>`_.
-Each bag contains data from an IMU, data from a horizontal LIDAR intended for 2D
-SLAM, and data from an additional vertical (i.e. push broom) LIDAR.
+这些数据是使用2D激光雷达背包在`德意志博物馆 <https://en.wikipedia.org/wiki/Deutsches_Museum>`_采集的。
+每个包都包含来自IMU的数据、来自用于2D SLAM的水平激光雷达的数据,以及来自额外的垂直(即推扫式)激光雷达的数据。
 
-License
+许可证
 -------
 
 Copyright 2016 The Cartographer Authors
@@ -41,11 +39,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Data
+数据
 ----
 
 =================================================================================================================================== ======== ====== ===== ============================
-`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                               Duration Size   Floor Known Issues
+`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                               持续时间 大小   楼层  已知问题
 =================================================================================================================================== ======== ====== ===== ============================
 `b0-2014-07-11-10-58-16.bag <https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/b0-2014-07-11-10-58-16.bag>`_ 149 s    38 MB  1. OG
 `b0-2014-07-11-11-00-49.bag <https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/b0-2014-07-11-11-00-49.bag>`_ 513 s    135 MB 1. OG
@@ -105,16 +103,14 @@ Data
 `b2-2016-04-27-12-31-41.bag <https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/b2-2016-04-27-12-31-41.bag>`_ 881 s    234 MB 1. OG
 =================================================================================================================================== ======== ====== ===== ============================
 
-3D Cartographer Backpack – Deutsches Museum
+3D Cartographer 背包 – 德意志博物馆
 ===========================================
 
-This data was collected using a 3D LIDAR backpack at the
-`Deutsches Museum <https://en.wikipedia.org/wiki/Deutsches_Museum>`_.
-Each bag contains data from an IMU and from two Velodyne VLP-16 LIDARs,
-one mounted horizontally (i.e. spin axis up) and one vertically
-(i.e. push broom).
+这些数据是使用3D激光雷达背包在`德意志博物馆 <https://en.wikipedia.org/wiki/Deutsches_Museum>`_采集的。
+每个包都包含来自IMU的数据和来自两个Velodyne VLP-16激光雷达的数据,
+一个水平安装(即旋转轴向上)和一个垂直安装(即推扫式)。
 
-License
+许可证
 -------
 
 Copyright 2016 The Cartographer Authors
@@ -131,11 +127,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Data
+数据
 ----
 
 ==================================================================================================================================================== ======== ====== ================================================
-`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                                                Duration Size   Known Issues
+`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                                               持续时间 大小   已知问题
 ==================================================================================================================================================== ======== ====== ================================================
 `b3-2015-12-10-12-41-07.bag <https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/b3-2015-12-10-12-41-07.bag>`_                  1466 s   7.3 GB 1 large gap in data, no intensities
 `b3-2015-12-10-13-10-17.bag <https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/b3-2015-12-10-13-10-17.bag>`_                  718 s    5.5 GB 1 gap in data, no intensities
@@ -167,11 +163,10 @@ Data
 MiR
 ===========================================
 
-This data was collected using `MiR100 <http://www.mobile-industrial-robots.com/de/products/mir100/>`_.
-An additional Logitech Webcam C930e Full HD camera was attached on top to
-collect images for landmark detection.
+这些数据是使用 `MiR100 <http://www.mobile-industrial-robots.com/de/products/mir100/>`_ 采集的。
+在顶部额外安装了一个 Logitech Webcam C930e Full HD 摄像头用于地标检测。
 
-License
+许可证
 -------
 
 Copyright 2018 The Cartographer Authors
@@ -188,11 +183,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Data
+数据
 ----
 
 ==================================================================================================================================================== ======== =======
-`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                                                Duration Size
+`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                                               持续时间 大小
 ==================================================================================================================================================== ======== =======
 `landmarks_demo_uncalibrated.bag <https://storage.googleapis.com/cartographer-public-data/bags/mir/landmarks_demo_uncalibrated.bag>`_                   180 s 41.7 MB
 ==================================================================================================================================================== ======== =======
@@ -200,18 +195,18 @@ Data
 PR2 – Willow Garage
 ===================
 
-This is the Willow Garage data set, described in:
+这是 Willow Garage 数据集,在以下论文中有描述:
 
 * "An Object-Based Semantic World Model for Long-Term Change Detection and
-  Semantic Querying.", by Julian Mason and Bhaskara Marthi, IROS 2012.
+  Semantic Querying.", 作者 Julian Mason 和 Bhaskara Marthi, IROS 2012。
 
-More details about these data can be found in:
+更多关于这些数据的细节可以在以下文献中找到:
 
-* "Unsupervised Discovery of Object Classes with a Mobile Robot", by Julian
-  Mason, Bhaskara Marthi, and Ronald Parr. ICRA 2014.
-* "Object Discovery with a Mobile Robot" by Julian Mason. PhD Thesis, 2013.
+* "Unsupervised Discovery of Object Classes with a Mobile Robot", 作者 Julian
+  Mason, Bhaskara Marthi, 和 Ronald Parr. ICRA 2014。
+* "Object Discovery with a Mobile Robot" 作者 Julian Mason. 博士论文, 2013。
 
-License
+许可证
 -------
 
 Copyright (c) 2011, Willow Garage
@@ -240,11 +235,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Data
+数据
 ----
 
 ===================================================================================================================== =======================
-`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                 Known Issues
+`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                已知问题
 ===================================================================================================================== =======================
 `2011-08-03-16-16-43.bag <https://storage.googleapis.com/cartographer-public-data/bags/pr2/2011-08-03-16-16-43.bag>`_ Missing base laser data
 `2011-08-03-20-03-22.bag <https://storage.googleapis.com/cartographer-public-data/bags/pr2/2011-08-03-20-03-22.bag>`_
@@ -318,19 +313,18 @@ Data
 Magazino
 ========
 
-Datasets recorded on `Magazino robots <https://www.magazino.eu/?lang=en>`_.
+这些数据集是在 `Magazino 机器人 <https://www.magazino.eu/?lang=en>`_ 上记录的。
 
-See the `cartographer_magazino <https://github.com/magazino/cartographer_magazino>`_
-repository for an integration of Magazino robot data for Cartographer.
+查看 `cartographer_magazino <https://github.com/magazino/cartographer_magazino>`_ 
+仓库了解 Magazino 机器人数据与 Cartographer 的集成。
 
-See the ``LICENSE`` file in ``cartographer_magazino`` for details on the dataset
-license. 
+有关数据集许可证的详细信息,请参见 ``cartographer_magazino`` 中的 ``LICENSE`` 文件。
 
-Data
+数据
 ----
 
 =================================================================================================================================== ======== ======== ============
-`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                               Duration Size     Known Issues
+`ROS Bag <http://wiki.ros.org/Bags>`_                                                                                              持续时间 大小    已知问题
 =================================================================================================================================== ======== ======== ============
 `hallway_return.bag <https://storage.googleapis.com/cartographer-public-data/bags/toru/hallway_return.bag>`_                        350 s    102.8 MB
 `hallway_localization.bag <https://storage.googleapis.com/cartographer-public-data/bags/toru/hallway_localization.bag>`_            137 s    40.4 MB

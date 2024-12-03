@@ -13,49 +13,47 @@
    limitations under the License.
 
 ======================================
-Running Cartographer ROS on a demo bag
+在演示数据包上运行 Cartographer ROS
 ======================================
 
-Now that Cartographer and Cartographer's ROS integration are installed, you can
-download example bags (e.g. 2D and 3D backpack collections of the
-`Deutsches Museum <https://en.wikipedia.org/wiki/Deutsches_Museum>`_) to a
-known location, in this case ``~/Downloads``, and use ``roslaunch`` to bring up
-the demo.
+现在 Cartographer 和 Cartographer 的 ROS 集成已经安装完成,您可以
+下载示例数据包(例如`德意志博物馆 <https://en.wikipedia.org/wiki/Deutsches_Museum>`_的2D和3D背包采集数据)到
+指定位置,在本例中是 ``~/Downloads``,然后使用 ``roslaunch`` 启动演示。
 
-The launch files will bring up ``roscore`` and ``rviz`` automatically.
+启动文件会自动启动 ``roscore`` 和 ``rviz``。
 
-.. warning:: When you want to run cartographer_ros, you might need to source your ROS environment by running ``source install_isolated/setup.bash`` first (replace bash with zsh if your shell is zsh)
+.. warning:: 当您想要运行 cartographer_ros 时,可能需要先运行 ``source install_isolated/setup.bash`` 来设置 ROS 环境(如果您使用的是 zsh shell,则将 bash 替换为 zsh)
 
-Deutsches Museum
+德意志博物馆
 ================
 
-Download and launch the 2D backpack demo:
+下载并启动2D背包演示:
 
 .. code-block:: bash
 
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/cartographer_paper_deutsches_museum.bag
     roslaunch cartographer_ros demo_backpack_2d.launch bag_filename:=${HOME}/Downloads/cartographer_paper_deutsches_museum.bag
 
-Download and launch the 3D backpack demo:
+下载并启动3D背包演示:
 
 .. code-block:: bash
 
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/with_intensities/b3-2016-04-05-14-14-00.bag
     roslaunch cartographer_ros demo_backpack_3d.launch bag_filename:=${HOME}/Downloads/b3-2016-04-05-14-14-00.bag
 
-Pure localization
+纯定位模式
 =================
 
-Pure localization uses 2 different bags. The first one is used to generate the map, the second to run pure localization.
+纯定位模式使用2个不同的数据包。第一个用于生成地图,第二个用于运行纯定位。
 
-Download the 2D bags from the Deutsche Museum:
+从德意志博物馆下载2D数据包:
 
 .. code-block:: bash
 
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/b2-2016-04-05-14-44-52.bag
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/b2-2016-04-27-12-31-41.bag
 
-Generate the map (wait until cartographer_offline_node finishes) and then run pure localization:
+生成地图(等待 cartographer_offline_node 完成)然后运行纯定位:
 
 .. code-block:: bash
 
@@ -64,14 +62,14 @@ Generate the map (wait until cartographer_offline_node finishes) and then run pu
        load_state_filename:=${HOME}/Downloads/b2-2016-04-05-14-44-52.bag.pbstream \
        bag_filename:=${HOME}/Downloads/b2-2016-04-27-12-31-41.bag
 
-Download the 3D bags from the Deutsche Museum:
+从德意志博物馆下载3D数据包:
 
 .. code-block:: bash
 
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/b3-2016-04-05-13-54-42.bag
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/b3-2016-04-05-15-52-20.bag
 
-Generate the map (wait until cartographer_offline_node finishes) and then run pure localization:
+生成地图(等待 cartographer_offline_node 完成)然后运行纯定位:
 
 .. code-block:: bash
 
@@ -80,7 +78,7 @@ Generate the map (wait until cartographer_offline_node finishes) and then run pu
        load_state_filename:=${HOME}/Downloads/b3-2016-04-05-13-54-42.bag.pbstream \
        bag_filename:=${HOME}/Downloads/b3-2016-04-05-15-52-20.bag
 
-Static landmarks
+静态地标
 ================
 
   .. raw:: html
@@ -89,16 +87,16 @@ Static landmarks
 
   .. code-block:: bash
 
-    # Download the landmarks example bag.
+    # 下载地标示例数据包
     wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/mir/landmarks_demo_uncalibrated.bag
 
-    # Launch the landmarks demo.
+    # 启动地标演示
     roslaunch cartographer_mir offline_mir_100_rviz.launch bag_filename:=${HOME}/Downloads/landmarks_demo_uncalibrated.bag
 
 Revo LDS
 ========
 
-Download and launch an example bag captured from a low-cost Revo Laser Distance Sensor from Neato Robotics vacuum cleaners:
+下载并启动一个从 Neato Robotics 扫地机器人上采集的低成本 Revo 激光测距传感器的示例数据包:
 
 .. code-block:: bash
 
@@ -108,7 +106,7 @@ Download and launch an example bag captured from a low-cost Revo Laser Distance 
 PR2
 ===
 
-Download and launch an example bag captured from a PR2 R&D humanoid robot from Willow Garage:
+下载并启动一个从 Willow Garage 的 PR2 研发人形机器人上采集的示例数据包:
 
 .. code-block:: bash
 
@@ -118,7 +116,7 @@ Download and launch an example bag captured from a PR2 R&D humanoid robot from W
 Taurob Tracker
 ==============
 
-Download and launch an example bag captured from a Taurob Tracker teleoperation robot:
+下载并启动一个从 Taurob Tracker 遥操作机器人上采集的示例数据包:
 
 .. code-block:: bash
 

@@ -12,14 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-Algorithm walkthrough for tuning
+算法原理及调优指南
 ================================
 
-Cartographer is a complex system and tuning it requires a good understanding of its inner working.
-This page tries to give an intuitive overview of the different subsystems used by Cartographer along with their configuration values.
-If you are interested in more than an introduction to Cartographer, you should refer to the Cartographer paper.
-It only describes the 2D SLAM but it defines rigourously most of the concepts described here.
-Those concepts generally apply to 3D as well.
+Cartographer 是一个复杂的系统,调优它需要深入理解其内部工作原理。本文档试图直观地介绍 Cartographer 使用的各个子系统及其配置参数。
+如果您想了解比入门更深入的内容,应该参考 Cartographer 论文。
+该论文主要描述了2D SLAM,但严格定义了此处描述的大多数概念。
+这些概念通常也适用于3D场景。
 
 W. Hess, D. Kohler, H. Rapp, and D. Andor,
 `Real-Time Loop Closure in 2D LIDAR SLAM`_, in
@@ -28,41 +27,41 @@ IEEE, 2016. pp. 1271–1278.
 
 .. _Real-Time Loop Closure in 2D LIDAR SLAM: https://research.google.com/pubs/pub45466.html
 
-Overview
+概述
 --------
 
 .. image:: https://raw.githubusercontent.com/cartographer-project/cartographer/master/docs/source/high_level_system_overview.png
      :target: https://github.com/cartographer-project/cartographer/blob/master/docs/source/high_level_system_overview.png
 
-Cartographer can be seen as two separate, but related subsystems.
-The first one is **local SLAM** (sometimes also called **frontend** or local trajectory builder).
-Its job is to build a succession of **submaps**.
-Each submap is meant to be locally consistent but we accept that local SLAM drifts over time.
-Most of the local SLAM options can be found in `install_isolated/share/cartographer/configuration_files/trajectory_builder_2d.lua`_ for 2D and `install_isolated/share/cartographer/configuration_files/trajectory_builder_3d.lua`_ for 3D. (for the rest of this page we will refer to `TRAJECTORY_BUILDER_nD` for the common options)
+Cartographer 可以看作两个独立但相关的子系统。
+第一个是**局部 SLAM**(有时也称为**前端**或局部轨迹构建器)。
+它的工作是构建一系列的**子地图**。
+每个子地图在局部都是一致的,但我们接受局部 SLAM 随时间的漂移。
+大多数局部 SLAM 选项可以在 2D 的 `install_isolated/share/cartographer/configuration_files/trajectory_builder_2d.lua`_ 和 3D 的 `install_isolated/share/cartographer/configuration_files/trajectory_builder_3d.lua`_ 中找到。(本文档后续将用 `TRAJECTORY_BUILDER_nD` 表示通用选项)
 
 .. _install_isolated/share/cartographer/configuration_files/trajectory_builder_2d.lua: https://github.com/cartographer-project/cartographer/blob/df337194e21f98f8c7b0b88dab33f878066d4b56/configuration_files/trajectory_builder_2d.lua
 .. _install_isolated/share/cartographer/configuration_files/trajectory_builder_3d.lua: https://github.com/cartographer-project/cartographer/blob/df337194e21f98f8c7b0b88dab33f878066d4b56/configuration_files/trajectory_builder_3d.lua
 
-The other subsystem is **global SLAM** (sometimes called the **backend**).
-It runs in background threads and its main job is to find **loop closure constraints**.
-It does that by scan-matching **scans** (gathered in **nodes**) against submaps.
-It also incorporates other sensor data to get a higher level view and identify the most consistent global solution.
-In 3D, it also tries to find the direction of gravity.
-Most of its options can be found in `install_isolated/share/cartographer/configuration_files/pose_graph.lua`_
+另一个子系统是**全局 SLAM**(有时称为**后端**)。
+它在后台线程中运行,其主要工作是寻找**回环检测约束**。
+它通过将**扫描**(收集在**节点**中)与子地图进行扫描匹配来实现这一点。
+它还结合其他传感器数据以获得更高层次的视图并识别最一致的全局解决方案。
+在3D中,它还试图找到重力方向。
+其大部分选项可以在 `install_isolated/share/cartographer/configuration_files/pose_graph.lua`_ 中找到。
 
 .. _install_isolated/share/cartographer/configuration_files/pose_graph.lua: https://github.com/cartographer-project/cartographer/blob/df337194e21f98f8c7b0b88dab33f878066d4b56/configuration_files/pose_graph.lua
 
-On a higher abstraction, the job of local SLAM is to generate good submaps and the job of global SLAM is to tie them most consistently together.
+在更高的抽象层面上,局部 SLAM 的工作是生成好的子地图,而全局 SLAM 的工作是将它们最一致地连接在一起。
 
-Input
+输入
 -----
 
-Range finding sensors (for example: LIDARs) provide depth information in multiple directions.
-However, some of the measurements are irrelevant for SLAM.
-If the sensor is partially covered with dust or if it is directed towards a part of the robot, some of the measured distance can be considered as noise for SLAM.
-On the other hand, some of the furthest measurements can also come from undesired sources (reflection, sensor noise) and are irrelevant for SLAM as well.
-To tackle those issue, Cartographer starts by applying a bandpass filter and only keeps range values between a certain min and max range.
-Those min and max values should be chosen according to the specifications of your robot and sensors.
+测距传感器(例如:激光雷达)在多个方向提供深度信息。
+然而,某些测量对于 SLAM 来说是无关的。
+如果传感器被灰尘部分遮挡或指向机器人的某个部分,一些测量距离对于 SLAM 来说可以被视为噪声。
+另一方面,一些最远的测量也可能来自不需要的源(反射、传感器噪声),对于 SLAM 也是无关的。
+为了解决这些问题,Cartographer 首先应用带通滤波器,只保留在特定最小和最大范围之间的距离值。
+这些最小和最大值应根据您的机器人和传感器的规格来选择。
 
 .. code-block:: lua
 
@@ -71,49 +70,49 @@ Those min and max values should be chosen according to the specifications of you
 
 .. note::
 
-    In 2D, Cartographer replaces ranges further than max_range by ``TRAJECTORY_BUILDER_2D.missing_data_ray_length``. It also provides a ``max_z`` and ``min_z`` values to filter 3D point clouds into a 2D cut.
+    在2D中,Cartographer 将超过 max_range 的范围替换为 ``TRAJECTORY_BUILDER_2D.missing_data_ray_length``。它还提供 ``max_z`` 和 ``min_z`` 值来将3D点云过滤成2D切片。
 
 .. note::
 
-    In Cartographer configuration files, every distance is defined in meters
+    在 Cartographer 配置文件中,所有距离都以米为单位定义
 
-Distances are measured over a certain period of time, while the robot is actually moving.
-However, distances are delivered by sensors "in batch" in large ROS messages.
-Each of the messages' timestamp can be considered independently by Cartographer to take into account deformations caused by the robot's motion.
-The more often Cartographer gets measurements, the better it becomes at unwarping the measurements to assemble a single coherent scan that could have been captured instantly.
-It is therefore strongly encouraged to provide as many range data (ROS messages) by scan (a set of range data that can be matched against another scan) as possible.
+距离是在机器人实际移动时的一段时间内测量的。
+然而,距离是由传感器"批量"在大型 ROS 消息中传递的。
+Cartographer 可以独立考虑每个消息的时间戳,以考虑机器人运动造成的变形。
+Cartographer 获得测量的频率越高,就越能更好地对测量进行去畸变,组装成一个可以瞬时捕获的连贯扫描。
+因此,强烈建议在每次扫描(可以与另一次扫描匹配的一组测距数据)中提供尽可能多的测距数据(ROS 消息)。
 
 .. code-block:: lua
 
     TRAJECTORY_BUILDER_nD.num_accumulated_range_data
 
-Range data is typically measured from a single point on the robot but in multiple angles. 
-This means that close surfaces (for instance the road) are very often hit and provide lots of points.
-On the opposite, far objects are less often hit and offer less points.
-In order to reduce the computational weight of points handling, we usually need to subsample point clouds.
-However, a simple random sampling would remove points from areas where we already have a low density of measurements and the high-density areas would still have more points than needed.
-To address that density problem, we can use a voxel filter that downsamples raw points into cubes of a constant size and only keeps the centroid of each cube.
+测距数据通常是从机器人上的单点以多个角度测量的。
+这意味着近距离表面(例如地面)经常被击中并提供大量点。
+相反,远处物体被击中的次数较少,提供的点也较少。
+为了减少点处理的计算量,我们通常需要对点云进行降采样。
+然而,简单的随机采样会从已经测量密度较低的区域移除点,而高密度区域仍然会有超过需要的点。
+为了解决这个密度问题,我们可以使用体素滤波器,将原始点降采样到固定大小的立方体中,只保留每个立方体的质心。
 
-A small cube size will result in a more dense data representation, causing more computations.
-A large cube size will result in a data loss but will be much quicker.
+较小的立方体尺寸会导致更密集的数据表示,造成更多的计算。
+较大的立方体尺寸会导致数据损失,但会快得多。
 
 .. code-block:: lua
 
     TRAJECTORY_BUILDER_nD.voxel_filter_size
 
-After having applied a fixed-size voxel filter, Cartographer also applies an **adaptive voxel filter**.
-This filter tries to determine the optimal voxel size (under a max length) to achieve a target number of points.
-In 3D, two adaptive voxel filters are used to generate a high resolution and a low resolution point clouds, their usage will be clarified in :ref:`local-slam`.
+在应用固定大小的体素滤波器后,Cartographer 还应用了**自适应体素滤波器**。
+该滤波器尝试确定最优体素大小(在最大长度下),以实现目标点数。
+在 3D 中,两个自适应体素滤波器用于生成高分辨率和低分辨率点云,它们的用法将在 :ref:`local-slam` 中澄清。
 
 .. code-block:: lua
 
     TRAJECTORY_BUILDER_nD.*adaptive_voxel_filter.max_length
     TRAJECTORY_BUILDER_nD.*adaptive_voxel_filter.min_num_points
 
-An Inertial Measurement Unit can be an useful source of information for SLAM because it provides an accurate direction of gravity (hence, of the ground) and a noisy but good overall indication of the robot's rotation.
-In order to filter the IMU noise, gravity is observed over a certain amount of time.
-If you use 2D SLAM, range data can be handled in real-time without an additional source of information so you can choose whether you'd like Cartographer to use an IMU or not.
-With 3D SLAM, you need to provide an IMU because it is used as an initial guess for the orientation of the scans, greatly reducing the complexity of scan matching.
+惯性测量单元可以作为 SLAM 的有用信息源,因为它提供了准确的地面方向(因此,地面)和噪声但总体上的机器人旋转指示。
+为了过滤掉 IMU 噪声,重力被观察一段时间。
+如果你使用 2D SLAM,你可以选择是否让 Cartographer 使用 IMU,因为范围数据可以在没有其他信息源的情况下实时处理。
+对于 3D SLAM,你需要提供 IMU,因为它被用作扫描方向的初始猜测,大大减少了扫描匹配的复杂性。
 
 
 .. code-block:: lua
@@ -123,33 +122,33 @@ With 3D SLAM, you need to provide an IMU because it is used as an initial guess 
 
 .. note::
 
-    In Cartographer configuration files, every time value is defined in seconds
+   在 Cartographer 配置文件中,每个时间值都以秒为单位定义。
 
 .. _local-slam:
 
-Local SLAM
+局部 SLAM
 ----------
 
-Once a scan has been assembled and filtered from multiple range data, it is ready for the local SLAM algorithm.
-Local SLAM inserts a new scan into its current submap construction by **scan matching** using an initial guess from the **pose extrapolator**.
-The idea behind the pose extrapolator is to use sensor data of other sensors besides the range finder to predict where the next scan should be inserted into the submap.
+一扫描被组装和过滤掉多个范围数据,它就准备好了局部 SLAM 算法。
+局部 SLAM 通过**扫描匹配**将新扫描插入其当前子地图构建中,使用来自**位姿外推器**的初始猜测。
+位姿外推器的想法是使用其他传感器的传感器数据来预测下一个扫描应该插入子地图的位置。
 
-Two scan matching strategies are available: 
+有两种扫描匹配策略可用:
 
-- The ``CeresScanMatcher`` takes the initial guess as prior and finds the best spot where the scan match fits the submap.
-  It does this by interpolating the submap and sub-pixel aligning the scan.
-  This is fast, but cannot fix errors that are significantly larger than the resolution of the submaps.
-  If your sensor setup and timing is reasonable, using only the ``CeresScanMatcher`` is usually the best choice to make.
-- The ``RealTimeCorrelativeScanMatcher`` can be enabled if you do not have other sensors or you do not trust them.
-  It uses an approach similar to how scans are matched against submaps in loop closure (described later), but instead it matches against the current submap.
-  The best match is then used as prior for the ``CeresScanMatcher``.
-  This scan matcher is very expensive and will essentially override any signal from other sensors but the range finder, but it is robust in feature rich environments.
+- ``CeresScanMatcher`` 将初始猜测作为先验,找到扫描匹配最适合子地图的最佳位置。
+  它通过插值子地图和子像素对齐扫描来实现这一点。
+  这是快速的,但无法修复误差,这些误差显著大于子地图的分辨率。
+  如果你的传感器设置和时间合理,使用 ``CeresScanMatcher`` 通常是最佳选择。
+- ``RealTimeCorrelativeScanMatcher`` 可以启用,如果你没有其他传感器或你不信任它们。
+  它使用与回环检测(稍后描述)类似的方匹配当前子地图中的扫描。
+  最佳匹配用于 ``CeresScanMatcher`` 的先验。
+  这个扫描匹配器非常昂贵,将基本上覆盖其他传感器但范围检测器的信号,但它对特征丰富的环境非常稳健。
 
-Either way, the ``CeresScanMatcher`` can be configured to give a certain weight to each of its input.
-The weight is a measure of trust into your data, this can be seen as a static covariance.
-The unit of weight parameters are dimensionless quantities and can't be compared between each others.
-The bigger the weight of a source of data is, the more emphasis Cartographer will put on this source of data when doing scan matching.
-Sources of data include occupied space (points from the scan), translation and rotation from the pose extrapolator (or ``RealTimeCorrelativeScanMatcher``)
+无论哪种方式,``CeresScanMatcher`` 都可以配置为给每个输入一个特定的权重。
+权重是一个信任度量,可以看作是静态协方差。
+权重参数的单位是无量纲量,不能在每个之比较。
+数据源的权重越大,Cartographer 在扫描匹配时越重视该数据源。
+数据源包括占用空间(扫描点)、来自位姿外推器(或 ``RealTimeCorrelativeScanMatcher``)的平移和旋转。
 
 .. code-block:: lua
 
@@ -161,12 +160,12 @@ Sources of data include occupied space (points from the scan), translation and r
 
 .. note::
 
-    In 3D, the ``occupied_space_weight_0`` and ``occupied_space_weight_1`` parameters are related, respectively, to the high resolution and low resolution filtered point clouds.
+   在 3D 中,``occupied_space_weight_0`` 和 ``occupied_space_weight_1`` 参数与高分辨率和低分辨率过滤点云相关。
 
-The ``CeresScanMatcher`` gets its name from `Ceres Solver`_, a library developed at Google to solve non-linear least squares problems.
-The scan matching problem is modelled as the minimization of such a problem with the **motion** (a transformation matrix) between two scans being a parameter to determine.
-Ceres optimizes the motion using a descent algorithm for a given number of iterations.
-Ceres can be configured to adapt the convergence speed to your own needs.
+``CeresScanMatcher`` 的名称来自 `Ceres Solver`_,一个由 Google 开发的库,用于解决非线性最小二乘问题。
+扫描匹配问题被建模为最小化此类问题,其中两个扫描之间的 **运动** (变换矩阵)是确定参数。
+Ceres 使用下降算法优化运动,对于给定的迭代次数。
+Ceres 可以配置为适应您的需求调整收敛速度。
 
 .. _Ceres Solver: http://ceres-solver.org/
 
@@ -176,10 +175,10 @@ Ceres can be configured to adapt the convergence speed to your own needs.
     TRAJECTORY_BUILDER_nD.ceres_scan_matcher.ceres_solver_options.max_num_iterations
     TRAJECTORY_BUILDER_nD.ceres_scan_matcher.ceres_solver_options.num_threads
 
-The ``RealTimeCorrelativeScanMatcher`` can be toggled depending on the trust you have in your sensors.
-It works by searching for similar scans in a **search window** which is defined by a maximum distance radius and a maximum angle radius.
-When performing scan matching with scans found in this window, a different weight can be chosen for the translational and rotational components.
-You can play with those weight if, for example, you know that your robot doesn't rotate a lot.
+``RealTimeCorrelativeScanMatcher`` 可以根据你对传感器信任度来切换。
+它通过在 **搜索窗口** 中搜索相似扫描来工作,该窗口由最大距离半径和最大角度半径定义。
+当与搜索窗口中的扫描进行扫描匹配时,可以为平移和旋转分量选择不同的权重。
+你可以调整这些权重,例如,如果你知道你的机器人不经常旋转。
 
 .. code-block:: lua
 
@@ -189,9 +188,9 @@ You can play with those weight if, for example, you know that your robot doesn't
     TRAJECTORY_BUILDER_nD.real_time_correlative_scan_matcher.translation_delta_cost_weight
     TRAJECTORY_BUILDER_nD.real_time_correlative_scan_matcher.rotation_delta_cost_weight
 
-To avoid inserting too many scans per submaps, once a motion between two scans is found by the scan matcher, it goes through a **motion filter**.
-A scan is dropped if the motion that led to it is not considered as significant enough.
-A scan is inserted into the current submap only if its motion is above a certain distance, angle or time threshold.
+为了避免在子地图中插入太多扫描,一旦通过扫描匹配器找到两个扫描之间的运动,它就会通过**运动滤波器**。
+如果运动不是被认为是显著的,扫描将被丢弃。
+只有在运动超过一定距离、角度或时间阈值时,扫描才会插入当前子地图。
 
 .. code-block:: lua
 
@@ -199,26 +198,26 @@ A scan is inserted into the current submap only if its motion is above a certain
     TRAJECTORY_BUILDER_nD.motion_filter.max_distance_meters
     TRAJECTORY_BUILDER_nD.motion_filter.max_angle_radians
 
-A submap is considered as complete when the local SLAM has received a given amount of range data.
-Local SLAM drifts over time, global SLAM is used to fix this drift.
-Submaps must be small enough so that the drift inside them is below the resolution, so that they are locally correct.
-On the other hand, they should be large enough to be distinct for loop closure to work properly.
+子地图被认为完成时,局部 SLAM 已经接收了一定数量的范围数据。
+局部 SLAM 随时间漂移,全局 SLAM 用于修复这种漂移。
+子地图必须足够小,以便子地图内的漂移低于分辨率,以便它们在局部是正确的。
+另一方面,它们应该足够大,以便在回环检测时正确工作。
 
 .. code-block:: lua
 
     TRAJECTORY_BUILDER_nD.submaps.num_range_data
 
-Submaps can store their range data in a couple of different data structures:
-The most widely used representation is called probability grids.
-However, in 2D, one can also choose to use Truncated Signed Distance Fields (TSDF).
+子地图可以用几种不同的数据结构存储其范围数据:
+最广泛使用的表现形式是概率网格。
+然而,在 2D 中,也可以选择使用截断符号距离场 (TSDF)。
 
 .. code-block:: lua
 
     TRAJECTORY_BUILDER_2D.submaps.grid_options_2d.grid_type
 
-Probability grids cut out space into a 2D or 3D table where each cell has a fixed size and contains the odds of being obstructed.
-Odds are updated according to "*hits*" (where the range data is measured) and "*misses*" (the free space between the sensor and the measured points).
-Both *hits* and *misses* can have a different weight in occupancy probability calculations giving more or less trust to occupied or free space measurements.
+概率网格将空间切成 2D 或 3D 表格,每个单元格都有固定大小并包含被占据的概率。
+概率根据 "*hits*" (测量范围数据)和 "*misses*" (传感器和测量点之间的自由空间)更新。
+*hits* 和 *misses* 可以在占用概率计算中具有不同的权重,从而对占用或自由空间测量值给予更多或更少的信任。
 
 .. code-block:: lua
 
@@ -227,14 +226,14 @@ Both *hits* and *misses* can have a different weight in occupancy probability ca
     TRAJECTORY_BUILDER_3D.submaps.range_data_inserter.hit_probability
     TRAJECTORY_BUILDER_3D.submaps.range_data_inserter.miss_probability
 
-In 2D, only one probability grid per submap is stored.
-In 3D, for scan matching performance reasons, two *hybrid* probability grids are used.
-(the term "hybrid" only refers to an internal tree-like data representation and is abstracted to the user)
+在 2D 中,每个子地图只存储一个概率网格。
+在 3D 中,为了扫描匹配性能原因,使用了两个 *混合* 概率网格。
+(术语 "混合"仅指内部树状数据表示,并抽象为用户)
 
-- a low resolution hybrid grid for far measurements
-- a high resolution hybrid grid for close measurements
+- 低分辨率混合网格用于远距离测量
+- 高分辨率混合网格用于近距离测量
 
-Scan matching starts by aligning far points of the low resolution point cloud with the low resolution hybrid grid and then refines the pose by aligning the close high resolution points with the high resolution hybrid grid.
+扫描匹配从将低分辨率点云的远点与低分辨率混合网格对齐开始,然后通过将高分辨率点的近点与高分辨率混合网格对齐来细化位置。
 
 .. code-block:: lua
 
@@ -246,18 +245,18 @@ Scan matching starts by aligning far points of the low resolution point cloud wi
 
 .. note::
 
-    Cartographer ROS provides an RViz plugin to visualize submaps. You can select the submaps you want to see from their number. In 3D, RViz only shows 2D projections of the 3D hybrid probability grids (in grayscale). Options are made available in RViz's left pane to switch between the low and high resolution hybrid grids visualization.
+    Cartographer ROS 提供了 RViz 插件来可视化子地图。你可以从他们的编号中选择你想看到的地图。在 3D 中,RViz 只显示 3D 混合概率网格的 2D 投影(在灰度上)。选项在 RViz 的左侧面板中可用,用于在低分辨率和低分辨率混合网格之间切换可视化。
 
 **TODO**: *Documenting TSDF configuration*
 
-Global SLAM
+全局 SLAM
 -----------
 
-While the local SLAM generates its succession of submaps, a global optimization (usually referred to as "*the optimization problem*" or "*sparse pose adjustment*") task runs in background.
-Its role is to re-arrange submaps between each other so that they form a coherent global map.
-For instance, this optimization is in charge of altering the currently built trajectory to properly align submaps with regards to loop closures.
+当局部 SLAM 生成其子地图序列时,全局优化(通常称为"*优化问题*"或"*稀疏位姿调整*")任务在后台运行。
+它的作用是重新排列子地图,使它们形成一个连贯的全局地图。
+例如,这个优化负责修改当前构建的轨迹,以便根据回环检测正确对齐子地图。
 
-The optimization is run in batches once a certain number of trajectory nodes was inserted. Depending on how frequently you need to run it, you can tune the size of these batches.
+一旦插入了一定数量的轨迹节点,优化就会批量运行。根据您需要运行它的频率,您可以调整这些批次的大小。
 
 .. code-block:: lua
 
@@ -265,21 +264,21 @@ The optimization is run in batches once a certain number of trajectory nodes was
 
 .. note::
 
-    Setting POSE_GRAPH.optimize_every_n_nodes to 0 is a handy way to disable global SLAM and concentrate on the behavior of local SLAM. This is usually one of the first thing to do to tune Cartographer.
+    将 POSE_GRAPH.optimize_every_n_nodes 设置为 0 是禁用全局 SLAM 并专注于局部 SLAM 行为的简便方法。这通常是调优 Cartographer 时要做的第一件事。
 
-The global SLAM is a kind of "*GraphSLAM*", it is essentially a pose graph optimization which works by building **constraints** between **nodes** and submaps and then optimizing the resulting constraints graph.
-Constraints can intuitively be thought of as little ropes tying all nodes together.
-The sparse pose adjustment fastens those ropes altogether.
-The resulting net is called the "*pose graph*".
+全局 SLAM 是一种"*GraphSLAM*",它本质上是一个位姿图优化,通过在**节点**和子地图之间建立**约束**,然后优化结果约束图来工作。
+约束可以直观地理解为将所有节点绑在一起的小绳子。
+稀疏位姿调整将这些绳子全部拉紧。
+最终的网络被称为"*位姿图*"。
 
 .. note::
 
-    Constraints can be visualized in RViz, it is very handy to tune global SLAM. One can also toggle ``POSE_GRAPH.constraint_builder.log_matches`` to get regular reports of the constraints builder formatted as histograms.
+    约束可以在 RViz 中可视化,这对调优全局 SLAM 非常有用。还可以切换 ``POSE_GRAPH.constraint_builder.log_matches`` 以获得约束构建器的定期报告,格式化为直方图。
 
-- Non-global constraints (also known as intra submaps constraints) are built automatically between nodes that are closely following each other on a trajectory.
-  Intuitively, those "*non-global ropes*" keep the local structure of the trajectory coherent.
-- Global constraints (also referred to as loop closure constraints or inter submaps constraints) are regularly searched between a new submap and previous nodes that are considered "*close enough*" in space (part of a certain **search window**) and a strong fit (a good match when running scan matching).
-  Intuitively, those "*global ropes*" introduce knots in the structure and firmly bring two strands closer.
+- 非全局约束(也称为子地图内约束)在轨迹上紧密相连的节点之间自动建立。
+  直观地说,这些"*非全局绳子*"保持轨迹的局部结构连贯。
+- 全局约束(也称为回环检测约束或子地图间约束)在新子地图和被认为在空间上"*足够近*"(属于某个**搜索窗口**)且匹配度强(在运行扫描匹配时匹配良好)的先前节点之间定期搜索。
+  直观地说,这些"*全局绳子*"在结构中引入结,并将两个分支牢固地拉近。
 
 .. code-block:: lua
 
@@ -291,22 +290,22 @@ The resulting net is called the "*pose graph*".
 
 .. note::
 
-    In practice, global constraints can do more than finding loop closures on a single trajectory. They can also align different trajectories recorded by multiple robots but we will keep this usage and the parameters related to "global localization" out of the scope of this document.
+    在实践中,全局约束可以做比在单个轨迹上找到回环检测更多的东西。它们还可以对齐由多个机器人记录的不同轨迹,但我们将在本文档的范围之外保留这种用法和与 "全局定位" 相关的参数。
 
-To limit the amount of constraints (and computations), Cartographer only considers a subsampled set of all close nodes for constraints building.
-This is controlled by a sampling ratio constant.
-Sampling too few nodes could result in missed constraints and ineffective loop closures.
-Sampling too many nodes would slow the global SLAM down and prevent real-time loop closures.
+为了限制约束的数量(和计算)量,Cartographer 只考虑所有接近节点的子集进行约束构建。
+这由采样比常数控制。
+采样太少的节点可能会导致约束丢失和无效的回环检测。
+采样太多的节点会降低全局 SLAM 的速度,并防止实时回环检测。
 
 .. code-block:: lua
 
     POSE_GRAPH.constraint_builder.sampling_ratio
 
-When a node and a submap are considered for constraint building, they go through a first scan matcher called the ``FastCorrelativeScanMatcher``.
-This scan matcher has been specifically designed for Cartographer and makes real-time loop closures scan matching possible.
-The ``FastCorrelativeScanMatcher`` relies on a "*Branch and bound*" mechanism to work at different grid resolutions and efficiently eliminate incorrect matchings.
-This mechanism is extensively presented in the Cartographer paper presented earlier in this document.
-It works on an exploration tree whose depth can be controlled.
+当节点和子地图被考虑用于约束构建时,它们通过第一个扫描匹配器 ``FastCorrelativeScanMatcher``。
+这个扫描匹配器是为 Cartographer 设计的,并使实时回环检测扫描匹配成为可能。
+``FastCorrelativeScanMatcher`` 依赖于 "*分支定界*" 机制,在不同的网格分辨率下工作,并有效地消除不正确的匹配。
+这个机制在本文档前面介绍的 Cartographer 论文中进行了广泛介绍。
+它在一个探索树中工作,深度可以控制。
 
 .. code-block:: lua
 
@@ -314,7 +313,7 @@ It works on an exploration tree whose depth can be controlled.
     POSE_GRAPH.constraint_builder.fast_correlative_scan_matcher_3d.branch_and_bound_depth
     POSE_GRAPH.constraint_builder.fast_correlative_scan_matcher_3d.full_resolution_depth
 
-Once the ``FastCorrelativeScanMatcher`` has a good enough proposal (above a minimum score of matching), it is then fed into a Ceres Scan Matcher to refine the pose.
+一旦 ``FastCorrelativeScanMatcher`` 有一个足够好的提议(超过匹配的最小分数),它就会被输入到 Ceres 扫描匹配器中进行细化。
 
 .. code-block:: lua
 
@@ -322,10 +321,10 @@ Once the ``FastCorrelativeScanMatcher`` has a good enough proposal (above a mini
     POSE_GRAPH.constraint_builder.ceres_scan_matcher_3d
     POSE_GRAPH.constraint_builder.ceres_scan_matcher
 
-When Cartographer runs *the optimization problem*, Ceres is used to rearrange submaps according to multiple *residuals*.
-Residuals are calculated using weighted cost functions.
-The global optimization has cost functions to take into account plenty of data sources: the global (loop closure) constraints, the non-global (matcher) constraints, the IMU acceleration and rotation measurements, the local SLAM rough pose estimations, an odometry source or a fixed frame (such as a GPS system).
-The weights and Ceres options can be configured as described in the :ref:`local-slam` section.
+当 Cartographer 运行 *优化问题* 时,Ceres 用于重新排列子地图,根据多个 *残差*。
+残差使用加权成本函数计算。
+全局优化具有成本函数来考虑大量数据源:全局(回环检测)约束、非全局(匹配器)约束、IMU 加速度和旋转测量、局部 SLAM 粗略位姿估计、里程计源或固定帧(如 GPS 系统)。
+权重和 Ceres 选项可以配置为描述的 :ref:`local-slam` 部分。
 
 .. code-block:: lua
 
@@ -338,19 +337,19 @@ The weights and Ceres options can be configured as described in the :ref:`local-
 
 .. note::
 
-    One can find useful information about the residuals used in the optimization problem by toggling ``POSE_GRAPH.log_residual_histograms``
+    你可以通过切换 ``POSE_GRAPH.log_residual_histograms`` 找到优化问题中使用的残差的有用信息。
 
-As part of its IMU residual, the optimization problem gives some flexibility to the IMU pose and, by default, Ceres is free to optimize the extrinsic calibration between your IMU and tracking frame.
-If you don't trust your IMU pose, the results of Ceres' global optimization can be logged and used to improve your extrinsic calibration.
-If Ceres doesn't optimize your IMU pose correctly and you trust your extrinsic calibration enough, you can make this pose constant.
+作为 IMU 残差的一部分,优化问题为 IMU 位姿提供了一些灵活性,默认情况下,Ceres 可以自由优化 IMU 和跟踪帧之间的外参。
+如果你不信任你的 IMU 位姿,你可以将结果记录下来,并用于改进你的外参。
+如果 Ceres 没有正确优化你的 IMU 位姿,你可以将这个位姿固定。
 
 .. code-block:: lua
 
     POSE_GRAPH.optimization_problem.log_solver_summary
     POSE_GRAPH.optimization_problem.use_online_imu_extrinsics_in_3d
 
-In residuals, the influence of outliers is handled by a **Huber loss** function configured with a certain a Huber scale.
-The bigger the Huber scale, `the higher is the impact`_ of (potential) outliers.
+在残差中,异常值的影响由 **Huber 损失** 函数处理,该函数配置了一定的 Huber 比例。
+Huber 比例越大,异常值的 `影响`_ 越大。
 
 .. _the higher is the impact: https://github.com/ceres-solver/ceres-solver/blob/0d3a84fce553c9f7aab331f0895fa7b1856ef5ee/include/ceres/loss_function.h#L172
 
@@ -358,8 +357,8 @@ The bigger the Huber scale, `the higher is the impact`_ of (potential) outliers.
 
     POSE_GRAPH.optimization_problem.huber_scale
 
-Once the trajectory is finished, Cartographer runs a new global optimization with, typically, a lot more iterations than previous global optimizations.
-This is done to polish the final result of Cartographer and usually does not need to be real-time so a large number of iterations is often a right choice.
+一旦轨迹完成,Cartographer 运行一个新的全局优化,通常比以前的优化有更多的迭代次数。
+这是为了打磨 Cartographer 的最终结果,通常不需要实时,因此大量迭代通常是一个正确的选择。
 
 .. code-block:: lua
 

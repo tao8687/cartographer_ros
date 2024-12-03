@@ -16,194 +16,127 @@
 .. cartographer_ros SHA: 99c23b6ac7874f7974e9ed808ace841da6f2c8b0
 .. TODO(hrapp): mention insert_free_space somewhere
 
-Tuning methodology
-==================
+调优指南
+=========
 
-Tuning Cartographer is unfortunately really difficult.
-The system has many parameters many of which affect each other.
-This tuning guide tries to explain a principled approach on concrete examples.
+Cartographer 的调优是一个复杂的任务,因为许多参数都会相互影响。本指南试图为调优过程提供一个系统的方法。
 
-Built-in tools
---------------
+基本原则
+===========
 
-Cartographer provides built-in tools for SLAM evaluation that can be particularly useful for measuring the local SLAM quality.
-They are stand-alone executables that ship with the core ``cartographer`` library and are hence independent, but compatible with ``cartographer_ros``.
-Therefore, please head to the `Cartographer Read the Docs Evaluation site`_ for a conceptual overview and a guide on how to use the tools in practice.
+- 在开始调优之前,请确保您已经阅读并理解了 :doc:`algo_walkthrough`。
+- 调优应该从局部 SLAM 开始,然后再调整全局 SLAM。
+- 调优是一个迭代过程:更改一个参数可能需要重新调整先前优化的参数。
 
-These tools assume that you have serialized the SLAM state to a ``.pbstream`` file.
-With ``cartographer_ros``, you can invoke the ``assets_writer`` to serialize the state - see the :ref:`assets_writer` section for more information.
+局部 SLAM 调优
+=================
 
-.. _Cartographer Read the Docs Evaluation site: https://google-cartographer.readthedocs.io/en/latest/evaluation.html
+1. 首先禁用全局 SLAM:
 
-Example: tuning local SLAM
---------------------------
+   .. code-block:: lua
 
-For this example we'll start at ``cartographer`` commit `aba4575`_ and ``cartographer_ros`` commit `99c23b6`_ and look at the bag ``b2-2016-04-27-12-31-41.bag`` from our test data set.
+       POSE_GRAPH.optimize_every_n_nodes = 0
 
-At our starting configuration, we see some slipping pretty early in the bag.
-The backpack passed over a ramp in the Deutsches Museum which violates the 2D assumption of a flat floor.
-It is visible in the laser scan data that contradicting information is passed to the SLAM.
-But the slipping also indicates that we trust the point cloud matching too much and disregard the other sensors quite strongly.
-Our aim is to improve the situation through tuning.
+2. 如果您使用 IMU 数据:
 
-.. _aba4575: https://github.com/cartographer-project/cartographer/commit/aba4575d937df4c9697f61529200c084f2562584
-.. _99c23b6: https://github.com/cartographer-project/cartographer_ros/commit/99c23b6ac7874f7974e9ed808ace841da6f2c8b0
+   - 确保 IMU 数据质量良好。
+   - 检查 IMU 的外参标定是否正确。
+   - 调整 ``TRAJECTORY_BUILDER_nD.imu_gravity_time_constant`` 以平衡噪声过滤和响应速度。
 
-If we only look at this particular submap, that the error is fully contained in one submap.
-We also see that over time, global SLAM figures out that something weird happened and partially corrects for it.
-The broken submap is broken forever though.
+3. 调整传感器数据过滤:
 
-.. TODO(hrapp): VIDEO
+   - 设置适当的 ``min_range`` 和 ``max_range``。
+   - 如果点云太密集,增加 ``voxel_filter_size``。
+   - 调整 ``num_accumulated_range_data`` 以平衡实时性和扫描质量。
 
-Since the problem here is slippage inside a submap, it is a local SLAM issue.
-So let's turn off global SLAM to not mess with our tuning.
+4. 调整扫描匹配器:
 
-.. code-block:: lua
+   - 如果您不信任其他传感器,启用 ``use_online_correlative_scan_matching``。
+   - 调整 ``ceres_scan_matcher`` 的权重:
+     
+     * ``translation_weight`` - 控制平移代价
+     * ``rotation_weight`` - 控制旋转代价
+     * ``occupied_space_weight`` - 控制占用空间匹配的重要性
 
-   POSE_GRAPH.optimize_every_n_nodes = 0
+5. 优化子地图设置:
 
-Correct size of submaps
-^^^^^^^^^^^^^^^^^^^^^^^
+   - 调整 ``submaps.num_range_data`` 以平衡局部一致性和漂移。
+   - 选择合适的 ``grid_options_2d.resolution``。
 
-The size of submaps is configured through ``TRAJECTORY_BUILDER_2D.submaps.num_range_data``.
-Looking at the individual submaps for this example they already fit the two constraints rather well, so we assume this parameter is well tuned.
+全局 SLAM 调优
+=================
 
-Tuning the ``CeresScanMatcher``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. 启用全局 SLAM 并设置合适的优化频率:
 
-In our case, the scan matcher can freely move the match forward and backwards without impacting the score.
-We'd like to penalize this situation by making the scan matcher pay more for deviating from the prior that it got.
-The two parameters controlling this are ``TRAJECTORY_BUILDER_2D.ceres_scan_matcher.translation_weight`` and ``rotation_weight``.
-The higher, the more expensive it is to move the result away from the prior, or in other words: scan matching has to generate a higher score in another position to be accepted.
+   .. code-block:: lua
 
-For instructional purposes, let's make deviating from the prior really expensive:
+       POSE_GRAPH.optimize_every_n_nodes = 90
 
-.. code-block:: lua
+2. 调整约束生成:
 
-   TRAJECTORY_BUILDER_2D.ceres_scan_matcher.translation_weight = 1e3
+   - ``constraint_builder.sampling_ratio`` - 控制用于回环检测的节点数量
+   - ``constraint_builder.min_score`` - 控制约束的质量阈值
+   - ``constraint_builder.global_localization_min_score`` - 控制全局定位的质量要求
 
-.. TODO(hrapp): video
+3. 调整优化问题:
 
-This allows the optimizer to pretty liberally overwrite the scan matcher results.
-This results in poses close to the prior, but inconsistent with the depth sensor and clearly broken.
-Experimenting with this value yields a better result at ``2e2``.
+   - 调整各种权重以平衡不同来源的信息:
+     
+     * ``optimization_problem.local_slam_pose_weight``
+     * ``optimization_problem.odometry_weight``
+     * ``optimization_problem.constraint_weight``
 
-.. TODO(hrapp): VIDEO with translation_weight = 2e2
+特殊用例
+=========
 
-Here, the scan matcher used rotation to still slightly mess up the result though.
-Setting the ``rotation_weight`` to ``4e2`` leaves us with a reasonable result.
+低延迟模式
+-----------
 
-Verification
-^^^^^^^^^^^^
+对于需要实时性能的应用,可以:
 
-To make sure that we did not overtune for this particular issue, we need to run the configuration against other collected data.
-In this case, the new parameters did reveal slipping, for example at the beginning of ``b2-2016-04-05-14-44-52.bag``, so we had to lower the ``translation_weight`` to ``1e2``.
-This setting is worse for the case we wanted to fix, but no longer slips.
-Before checking them in, we normalize all weights, since they only have relative meaning.
-The result of this tuning was `PR 428`_.
-In general, always try to tune for a platform, not a particular bag.
+1. 减少计算负载:
 
-.. _PR 428: https://github.com/cartographer-project/cartographer/pull/428
+   - 降低 ``num_background_threads``
+   - 增加 ``voxel_filter_size``
+   - 减少 ``num_range_data``
 
-Special Cases
--------------
+2. 调整全局优化:
 
-The default configuration and the above tuning steps are focused on quality.
-Only after we have achieved good quality, we can further consider special cases.
+   - 增加 ``optimize_every_n_nodes``
+   - 减少 ``constraint_builder.sampling_ratio``
+   - 增加 ``constraint_builder.min_score``
 
-Low Latency
-^^^^^^^^^^^
+纯定位模式
+-----------
 
-By low latency, we mean that an optimized local pose becomes available shortly after sensor input was received,
-usually within a second, and that global optimization has no backlog.
-Low latency is required for online algorithms, such as robot localization.
-Local SLAM, which operates in the foreground, directly affects latency.
-Global SLAM builds up a queue of background tasks.
-When global SLAM cannot keep up the queue, drift can accumulate indefinitely,
-so global SLAM should be tuned to work in real time.
+在已有地图中进行定位时:
 
-There are many options to tune the different components for speed, and we list them ordered from
-the recommended, straightforward ones to the those that are more intrusive.
-It is recommended to only explore one option at a time, starting with the first.
-Configuration parameters are documented in the `Cartographer documentation`_.
+1. 启用纯定位模式:
 
-.. _Cartographer documentation: https://google-cartographer.readthedocs.io/en/latest/configuration.html
+   .. code-block:: lua
 
-To tune global SLAM for lower latency, we reduce its computational load
-until is consistently keeps up with real-time input.
-Below this threshold, we do not reduce it further, but try to achieve the best possible quality.
-To reduce global SLAM latency, we can
+       TRAJECTORY_BUILDER.pure_localization = true
 
-- decrease ``optimize_every_n_nodes``
-- increase ``MAP_BUILDER.num_background_threads`` up to the number of cores
-- decrease ``global_sampling_ratio``
-- decrease ``constraint_builder.sampling_ratio``
-- increase ``constraint_builder.min_score``
-- for the adaptive voxel filter(s), decrease ``.min_num_points``, ``.max_range``, increase ``.max_length``
-- increase ``voxel_filter_size``, ``submaps.resolution``, decrease ``submaps.num_range_data``
-- decrease search windows sizes, ``.linear_xy_search_window``, ``.linear_z_search_window``, ``.angular_search_window``
-- increase ``global_constraint_search_after_n_seconds``
-- decrease ``max_num_iterations``
+2. 调整优化频率:
 
-To tune local SLAM for lower latency, we can
+   - 减小 ``optimize_every_n_nodes``
+   - 减小 ``global_sampling_ratio``
+   - 减小 ``constraint_builder.sampling_ratio``
 
-- increase ``voxel_filter_size``
-- increase ``submaps.resolution``
-- for the adaptive voxel filter(s), decrease ``.min_num_points``, ``.max_range``, increase ``.max_length``
-- decrease ``max_range`` (especially if data is noisy)
-- decrease ``submaps.num_range_data``
+3. 确保子地图分辨率与已有地图匹配。
 
-Note that larger voxels will slightly increase scan matching scores as a side effect,
-so score thresholds should be increased accordingly.
+仍有问题?
+----------
 
-Pure Localization in a Given Map
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+如果您仍然无法使 Cartographer 在您的数据上可靠工作,您可以:
 
-Pure localization is different from mapping.
-First, we expect a lower latency of both local and global SLAM.
-Second, global SLAM will usually find a very large number of inter constraints between the frozen trajectory
-that serves as a map and the current trajectory.
-
-To tune for pure localization, we should first enable ``TRAJECTORY_BUILDER.pure_localization = true`` and
-strongly decrease ``POSE_GRAPH.optimize_every_n_nodes`` to receive frequent results.
-With these settings, global SLAM will usually be too slow and cannot keep up.
-As a next step, we strongly decrease ``global_sampling_ratio`` and ``constraint_builder.sampling_ratio``
-to compensate for the large number of constraints.
-We then tune for lower latency as explained above until the system reliably works in real time.
-
-If you run in ``pure_localization``, ``submaps.resolution`` **should be matching** with the resolution of the submaps in the ``.pbstream`` you are running on.
-Using different resolutions is currently untested and may not work as expected.
-
-Odometry in Global Optimization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a separate odometry source is used as an input for local SLAM (``use_odometry = true``), we can also tune the global SLAM to benefit from this additional information.
-
-There are in total four parameters that allow us to tune the individual weights of local SLAM and odometry in the optimization:
-
-.. code-block:: lua
-
-    POSE_GRAPH.optimization_problem.local_slam_pose_translation_weight
-    POSE_GRAPH.optimization_problem.local_slam_pose_rotation_weight
-    POSE_GRAPH.optimization_problem.odometry_translation_weight
-    POSE_GRAPH.optimization_problem.odometry_rotation_weight
-
-We can set these weights depending on how much we trust either local SLAM or the odometry.
-By default, odometry is weighted into global optimization similar to local slam (scan matching) poses.
-However, odometry from wheel encoders often has a high uncertainty in rotation.
-In this case, the rotation weight can be reduced, even down to zero.
-
-Still have a problem ?
-----------------------
-
-If you can't get Cartographer to work reliably on your data, you can open a `GitHub issue`_ asking for help.
-Developers are keen to help, but they can only be helpful if you follow `an issue template`_ containing the result of ``rosbag_validate``, a link to a fork of ``cartographer_ros`` with your config and a link to a ``.bag`` file reproducing your problem.
+1. 查看已关闭的 GitHub issues,寻找类似问题的解决方案。
+2. 创建新的 GitHub issue 寻求帮助,请确保:
+   
+   - 包含 ``rosbag_validate`` 的结果
+   - 提供您的配置文件
+   - 提供可重现问题的 .bag 文件
 
 .. note::
 
-   There are already lots of GitHub issues with all sorts of problems solved by the developers. Going through `the closed issues of cartographer_ros`_ and `of cartographer`_ is a great way to learn more about Cartographer and maybe find a solution to your problem !
-
-.. _GitHub issue: https://github.com/cartographer-project/cartographer_ros/issues
-.. _an issue template: https://github.com/cartographer-project/cartographer_ros/issues/new?labels=question
-.. _the closed issues of cartographer_ros: https://github.com/cartographer-project/cartographer_ros/issues?q=is%3Aissue+is%3Aclosed
-.. _of cartographer: https://github.com/cartographer-project/cartographer_ros/issues?q=is%3Aissue+is%3Aclosed
+   开发人员很乐意提供帮助,但他们只能在您提供完整信息的情况下提供有效帮助。

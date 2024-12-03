@@ -13,120 +13,79 @@
    limitations under the License.
 
 =========================================
-Lua configuration reference documentation
+Lua 配置参考文档
 =========================================
 
-Note that Cartographer's ROS integration uses `tf2`_, thus all frame IDs are
-expected to contain only a frame name (lower-case with underscores) and no
-prefix or slashes. See `REP 105`_ for commonly used coordinate frames.
+注意,Cartographer 的 ROS 集成使用 `tf2`_,因此所有坐标系 ID 应该只包含坐标系名称(小写字母加下划线)而不包含前缀或斜杠。有关常用坐标系请参考 `REP 105`_。
 
-Note that topic names are given as *base* names (see `ROS Names`_) in
-Cartographer's ROS integration. This means it is up to the user of the
-Cartographer node to remap, or put them into a namespace.
+注意,在 Cartographer 的 ROS 集成中,话题名称都是以*基础*名称给出的(参见 `ROS Names`_)。这意味着由 Cartographer 节点的用户来决定是否重映射或将它们放入命名空间。
 
-The following are Cartographer's ROS integration top-level options, all of which
-must be specified in the Lua configuration file:
+以下是 Cartographer 的 ROS 集成顶层选项,所有这些选项都必须在 Lua 配置文件中指定:
 
 map_frame
-  The ROS frame ID to use for publishing submaps, the parent frame of poses,
-  usually "map".
+  用于发布子地图的 ROS 坐标系 ID,也是位姿的父坐标系,通常为 "map"。
 
 tracking_frame
-  The ROS frame ID of the frame that is tracked by the SLAM algorithm. If an IMU
-  is used, it should be at its position, although it might be rotated. A common
-  choice is "imu_link".
+  被 SLAM 算法跟踪的坐标系的 ROS ID。如果使用 IMU,它应该位于 IMU 的位置,尽管可能会旋转。常见的选择是 "imu_link"。
 
 published_frame
-  The ROS frame ID to use as the child frame for publishing poses. For example
-  "odom" if an "odom" frame is supplied by a different part of the system. In
-  this case the pose of "odom" in the *map_frame* will be published. Otherwise,
-  setting it to "base_link" is likely appropriate.
+  用作发布位姿的子坐标系的 ROS ID。例如,如果系统的其他部分提供了 "odom" 坐标系,则设为 "odom"。在这种情况下,将发布 *map_frame* 中 "odom" 的位姿。否则,设置为 "base_link" 可能更合适。
 
 odom_frame
-  Only used if *provide_odom_frame* is true. The frame between *published_frame*
-  and *map_frame* to be used for publishing the (non-loop-closed) local SLAM
-  result. Usually "odom".
+  仅在 *provide_odom_frame* 为 true 时使用。用于发布(未闭环的)局部 SLAM 结果的 *published_frame* 和 *map_frame* 之间的坐标系。通常为 "odom"。
 
 provide_odom_frame
-  If enabled, the local, non-loop-closed, continuous pose will be published as
-  the *odom_frame* in the *map_frame*.
+  如果启用,将把局部的、未闭环的、连续的位姿作为 *map_frame* 中的 *odom_frame* 发布。
 
 publish_frame_projected_to_2d
-  If enabled, the published pose will be restricted to a pure 2D pose (no roll,
-  pitch, or z-offset). This prevents potentially unwanted out-of-plane poses in
-  2D mode that can occur due to the pose extrapolation step (e.g. if the pose
-  shall be published as a 'base-footprint'-like frame)
+  如果启用,发布的位姿将被限制为纯 2D 位姿(无横滚、俯仰或 z 偏移)。这可以防止在 2D 模式下由于位姿外推步骤可能产生的不需要的平面外位姿(例如,如果位姿要作为类似 'base-footprint' 的坐标系发布)。
 
 use_odometry
-  If enabled, subscribes to `nav_msgs/Odometry`_ on the topic "odom". Odometry
-  must be provided in this case, and the information will be included in SLAM.
+  如果启用,将订阅话题 "odom" 上的 `nav_msgs/Odometry`_ 消息。在这种情况下必须提供里程计数据,这些信息将被包含在 SLAM 中。
 
 use_nav_sat
-  If enabled, subscribes to `sensor_msgs/NavSatFix`_ on the topic "fix".
-  Navigation data must be provided in this case, and the information will be
-  included in the global SLAM.
+  如果启用,将订阅话题 "fix" 上的 `sensor_msgs/NavSatFix`_ 消息。在这种情况下必须提供导航数据,这些信息将被包含在全局 SLAM 中。
 
 use_landmarks
-  If enabled, subscribes to `cartographer_ros_msgs/LandmarkList`_ on the topic
-  "landmarks".  Landmarks must be provided, as `cartographer_ros_msgs/LandmarkEntry`_ within `cartographer_ros_msgs/LandmarkList`_.  If `cartographer_ros_msgs/LandmarkEntry`_ data is provided the information
-  will be included in the SLAM according to the ID of the `cartographer_ros_msgs/LandmarkEntry`_. The `cartographer_ros_msgs/LandmarkList`_ should be provided at a sample rate comparable to the other sensors.  The list can be empty but has to be provided because Cartographer strictly time orders sensor data in order to make the landmarks deterministic. However it is possible to set the trajectory builder option "collate_landmarks" to false and allow for a non-deterministic but also non-blocking approach.
+  如果启用,将订阅话题 "landmarks" 上的 `cartographer_ros_msgs/LandmarkList`_ 消息。必须提供地标数据,作为 `cartographer_ros_msgs/LandmarkList`_ 中的 `cartographer_ros_msgs/LandmarkEntry`_。如果提供了 `cartographer_ros_msgs/LandmarkEntry`_ 数据,这些信息将根据 `cartographer_ros_msgs/LandmarkEntry`_ 的 ID 包含在 SLAM 中。`cartographer_ros_msgs/LandmarkList`_ 的采样率应与其他传感器相当。列表可以为空但必须提供,因为 Cartographer 严格按时间顺序处理传感器数据以使地标具有确定性。但是可以将轨迹构建器选项 "collate_landmarks" 设置为 false,以允许非确定性但也非阻塞的方法。
 
 num_laser_scans
-  Number of laser scan topics to subscribe to. Subscribes to
-  `sensor_msgs/LaserScan`_ on the "scan" topic for one laser scanner, or topics
-  "scan_1", "scan_2", etc. for multiple laser scanners.
+  要订阅的激光扫描话题数量。对于单个激光扫描仪,订阅 "scan" 话题上的 `sensor_msgs/LaserScan`_ 消息;对于多个激光扫描仪,订阅 "scan_1"、"scan_2" 等话题。
 
 num_multi_echo_laser_scans
-  Number of multi-echo laser scan topics to subscribe to. Subscribes to
-  `sensor_msgs/MultiEchoLaserScan`_ on the "echoes" topic for one laser scanner,
-  or topics "echoes_1", "echoes_2", etc. for multiple laser scanners.
+  要订阅的多回波激光扫描话题数量。对于单个激光扫描仪,订阅 "echoes" 话题上的 `sensor_msgs/MultiEchoLaserScan`_ 消息;对于多个激光扫描仪,订阅 "echoes_1"、"echoes_2" 等话题。
 
 num_subdivisions_per_laser_scan
-  Number of point clouds to split each received (multi-echo) laser scan into.
-  Subdividing a scan makes it possible to unwarp scans acquired while the
-  scanners are moving. There is a corresponding trajectory builder option to
-  accumulate the subdivided scans into a point cloud that will be used for scan
-  matching.
+  将每个接收到的(多回波)激光扫描分割成的点云数量。将扫描分割使得可以对扫描仪移动时获取的扫描进行去畸变。有一个相应的轨迹构建器选项可以将分割的扫描累积成用于扫描匹配的点云。
 
 num_point_clouds
-  Number of point cloud topics to subscribe to. Subscribes to
-  `sensor_msgs/PointCloud2`_ on the "points2" topic for one rangefinder, or
-  topics "points2_1", "points2_2", etc. for multiple rangefinders.
+  要订阅的点云话题数量。对于单个测距仪,订阅 "points2" 话题上的 `sensor_msgs/PointCloud2`_ 消息;对于多个测距仪,订阅 "points2_1"、"points2_2" 等话题。
 
 lookup_transform_timeout_sec
-  Timeout in seconds to use for looking up transforms using `tf2`_.
+  查找变换时的超时时间(以秒为单位)。
 
 submap_publish_period_sec
-  Interval in seconds at which to publish the submap poses, e.g. 0.3 seconds.
+  发布子地图更新的时间间隔(以秒为单位)。
 
 pose_publish_period_sec
-  Interval in seconds at which to publish poses, e.g. 5e-3 for a frequency of
-  200 Hz.
-
-publish_to_tf
-  Enable or disable providing of TF transforms.
-
-publish_tracked_pose
-  Enable publishing of tracked pose as a `geometry_msgs/PoseStamped`_ to topic "tracked_pose".
+  发布位姿更新的时间间隔(以秒为单位)。
 
 trajectory_publish_period_sec
-  Interval in seconds at which to publish the trajectory markers, e.g. 30e-3
-  for 30 milliseconds.
+  发布轨迹标记的时间间隔(以秒为单位)。
 
 rangefinder_sampling_ratio
-  Fixed ratio sampling for range finders messages.
+  用于构建子地图的测距数据采样比例。
 
 odometry_sampling_ratio
-  Fixed ratio sampling for odometry messages.
+  用于局部 SLAM 的里程计数据采样比例。
 
-fixed_frame_sampling_ratio
-  Fixed ratio sampling for fixed frame messages.
+fixed_frame_pose_sampling_ratio
+  用于局部 SLAM 的固定帧位姿数据采样比例。
 
 imu_sampling_ratio
-  Fixed ratio sampling for IMU messages.
+  用于局部 SLAM 的 IMU 数据采样比例。
 
 landmarks_sampling_ratio
-  Fixed ratio sampling for landmarks messages.
 
 .. _REP 105: http://www.ros.org/reps/rep-0105.html
 .. _ROS Names: http://wiki.ros.org/Names
